@@ -28,7 +28,7 @@ class Visualisation:
         sns.set(rc={'figure.figsize':(11.7,8.27)})
 
 
-    #stopwords needs to be set
+    #stopwords needs to be a set
     def showWordCloud(self, df, attribute, default_stopwords=True, stopwords=set()):
         text = df[attribute].tolist()
 
@@ -44,3 +44,17 @@ class Visualisation:
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis("off")
         plt.rcParams['figure.figsize'] = [10, 10]
+
+    #plot count of unique attribute in dataframe (e.g. amount of each date)
+    def plotCountOfUnique(self, df, attribute, xlabelrotation='vertical', xlabelsize='6', xlabel=None, ylabel=None):
+        count = list(map(lambda x: x-1, list(df.groupby(attribute).count()['id'])))
+        unique = list(df[attribute].unique())
+        plt.plot(unique, count)
+        plt.ylabel(ylabel)
+        plt.xticks(unique, rotation=xlabelrotation)
+        plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
+        plt.xlabel(xlabel)
+
+    def categoricalScatterPlot(self, df, category, datacat, rotation=0, height=5, fontsize= 10):
+        plot = sns.catplot(x=category, y=datacat, data=df, height=height, aspect=11.7/8.27)
+        plot.set_xticklabels(rotation=rotation, fontsize=fontsize)

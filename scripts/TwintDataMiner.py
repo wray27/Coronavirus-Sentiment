@@ -2,6 +2,9 @@ import csv, os
 from TwintScraper import TwintScraper
 import numpy as np
 import pandas as pd
+from datetime import date, timedelta
+import asyncio
+
 
 
 class TwintDataMiner:
@@ -19,13 +22,14 @@ class TwintDataMiner:
             "name":8,
             "place":9,
             "tweet":10
-            #more can be added
+            #more can be added- see first line of csv
         }
 
     #use twint scraper to get tweets, use kwargs to define arguments (specified in TwintScraper)
-    def scrape(self, **kwargs):
+    def scrape(self,**kwargs):
         ts = TwintScraper()
         ts.scrape(**kwargs)
+
 
     #get specific attribute of the tweets e.g. date
     def getAttribute(self, info, file):

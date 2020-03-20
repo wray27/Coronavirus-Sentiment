@@ -7,7 +7,7 @@ class PandasDataCleaner:
         pass
 
     #delete all non ascii characters
-    def deEmojify(self, input):
+    def removeEmojis(self, input):
         return input.encode('ascii', 'ignore').decode('ascii')
 
     #translate tweets- CHECK IF WORKING, JSONDecodeError because of request limits (I think)
@@ -29,7 +29,7 @@ class PandasDataCleaner:
                 df[outputRow][i] = ''
         return df
 
-    def cleanTweet(self, df, inputRow):
+    def cleanTweets(self, df, inputRow):
         df[inputRow] = df[inputRow].apply(lambda x: self.removeUrl(self.removeCharacters(x)))
         return df
 
@@ -41,6 +41,18 @@ class PandasDataCleaner:
 
 
     def removeCharacters(self, input):
-        input = self.deEmojify(input)
+        input = self.removeEmojis(input)
         input = self.removeWhitespace(input)
         return input
+
+    #add new column in dataframe with general location
+    def addGeneralLocation(self, df):
+        if(not "genplace" in df):
+            df["genplace"] = ""
+        df["genplace"] = df['place'].apply(lambda x: self.getGenLocFromString(x))
+        return df
+
+    #get general location e.g. Bristol, England -> England
+    def getGenLocFromString(self, string):
+        splitStr = string.split(",")
+        return splitStr[0] if len(splitStr) == 1 else splitStr[1]

@@ -29,7 +29,7 @@ class TextBlobSentiment:
 
         return df
 
-    #pretty printing the result
+    #pformat print result with colours
     def printmd(self, string, color=None):
         colorstr = "<span style='color:{}'>{}</span>".format(color, string)
         display(Markdown(colorstr))
