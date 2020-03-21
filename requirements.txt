@@ -10,3 +10,5 @@ requests==2.23.0
 soupsieve==2.0
 twitterscraper==1.4.0
 urllib3==1.25.8
+geopandas==0.7.0
+bokeh==2.0.0
