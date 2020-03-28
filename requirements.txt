@@ -12,4 +12,8 @@ twitterscraper==1.4.0
 urllib3==1.25.8
 geopandas==0.7.0
 bokeh==2.0.0
-python-amazon-simple-product-api==2.2.11
+seaborn==0.10.0
+matplotlib==3.2.1
+twint==2.1.16
+pandas==1.0.3
+textblob==0.15.3
