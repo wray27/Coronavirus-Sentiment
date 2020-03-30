@@ -18,3 +18,4 @@ twint==2.1.16
 pandas==1.0.3
 textblob==0.15.3
 pytrends==4.7.2
+yahoo-finance==1.4.0
