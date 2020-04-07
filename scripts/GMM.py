@@ -8,6 +8,7 @@ class GMM:
     def __init__(self):
         pass
 
+    #generate panic prediction from column (tweets)
     def generateLabelsFromDataframe(self, df, column='tweet', plot=True, vocab=None):
         if(vocab):
             vocabulary = createVocabulary(vocab)
@@ -16,28 +17,38 @@ class GMM:
             bow = bagOfWords(df, column)
 
 
-        panic = modelFromBow(bow, plot)
+        panic = self.modelFromBow(bow, plot)
         return panic
 
+    #bag of words from a column (tweets)
+    def generateBagOfWords(self, df, column, vocab=None):
+        if(vocab):
+            vocabulary = createVocabulary(vocab)
+            bow = bagOfWords(df, column, vocab=vocabulary)
+        else:
+            bow = bagOfWords(df, column)
+        return bow
 
 
-def modelFromBow(bow, plot):
-    #normalise each axis for pca
-    x = StandardScaler().fit_transform(bow)
 
-    pc = pca(x)
 
-    gmm = GaussianMixture(n_components=2).fit(x)
-    labels = gmm.predict(x)
-    #probability of each class (e.g. panic and non-panic)
-    panic = gmm.predict_proba(x)
+    def modelFromBow(self, bow, plot=True):
+        #normalise each axis for pca
+        x = StandardScaler().fit_transform(bow)
 
-    if(plot):
-        #plot predictions
-        plt.scatter(pc[:, 0], pc[:, 1], c=labels, s=40, cmap='viridis')
-        plt.show()
+        pc = pca(x)
 
-    return panic
+        gmm = GaussianMixture(n_components=2).fit(x)
+        labels = gmm.predict(x)
+        #probability of each class (e.g. panic and non-panic)
+        panic = gmm.predict_proba(x)
+
+        if(plot):
+            #plot predictions
+            plt.scatter(pc[:, 0], pc[:, 1], c=labels, s=40, cmap='viridis')
+            plt.show()
+
+        return panic
 
 
 
