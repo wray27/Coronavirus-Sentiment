@@ -1,0 +1,71 @@
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
+import matplotlib.pyplot as plt
+
+class GMM:
+    def __init__(self):
+        pass
+
+    def generateLabelsFromDataframe(self, df, column='tweet', plot=True, vocab=None):
+        if(vocab):
+            vocabulary = createVocabulary(vocab)
+            bow = bagOfWords(df, column, vocab=vocabulary)
+        else:
+            bow = bagOfWords(df, column)
+
+
+        panic = modelFromBow(bow, plot)
+        return panic
+
+
+
+def modelFromBow(bow, plot):
+    #normalise each axis for pca
+    x = StandardScaler().fit_transform(bow)
+
+    pc = pca(x)
+
+    gmm = GaussianMixture(n_components=2).fit(x)
+    labels = gmm.predict(x)
+    #probability of each class (e.g. panic and non-panic)
+    panic = gmm.predict_proba(x)
+
+    if(plot):
+        #plot predictions
+        plt.scatter(pc[:, 0], pc[:, 1], c=labels, s=40, cmap='viridis')
+        plt.show()
+
+    return panic
+
+
+
+def bagOfWords(df, col, vocab=None):
+    #get tweets
+    data = df[col].to_numpy()
+
+    count = CountVectorizer(vocabulary=vocab)
+
+    #bag of words with unlimited dictionary
+    bag_of_words = count.fit_transform(data)
+    bow = bag_of_words.toarray()
+
+    return bow
+
+
+def pca(x):
+    pca = PCA(n_components=3)
+    pc = pca.fit_transform(x)
+    return pc
+
+
+#create vocabulary for bag of words
+def createVocabulary(words):
+    vocab = dict()
+    count = 0
+    for word in words:
+        if(not word in vocab):
+            vocab[word] = count
+            count += 1
+    return vocab
