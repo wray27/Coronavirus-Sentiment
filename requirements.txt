@@ -21,3 +21,4 @@ pytrends==4.7.2
 pandas-datareader==0.8.1
 newsapi-python==0.2.6
 yfinance==0.1.54
+pycountry==19.8.18
