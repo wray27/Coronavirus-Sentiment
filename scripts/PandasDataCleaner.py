@@ -25,7 +25,7 @@ class PandasDataCleaner:
         for i in range(df.shape[0]):
             try:
                 df[outputRow][i] = detect(df[inputRow][i])
-            except:
+            except Exception as e:
                 df[outputRow][i] = ''
         return df
 
