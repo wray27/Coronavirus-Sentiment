@@ -26,6 +26,7 @@ class PandasDataCleaner:
             try:
                 df[outputRow][i] = detect(df[inputRow][i])
             except:
+                print("Exception")
                 df[outputRow][i] = ''
         return df
 
@@ -55,4 +56,4 @@ class PandasDataCleaner:
     #get general location e.g. Bristol, England -> England
     def getGenLocFromString(self, string):
         splitStr = string.split(",")
-        return splitStr[0] if len(splitStr) == 1 else splitStr[1]
+        return splitStr[0].strip() if len(splitStr) == 1 else splitStr[1].strip()
