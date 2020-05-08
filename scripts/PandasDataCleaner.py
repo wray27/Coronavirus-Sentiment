@@ -1,6 +1,6 @@
 from googletrans import Translator
 from langdetect import detect
-import re
+import re, sys
 
 class PandasDataCleaner:
     def __init__(self):
@@ -22,12 +22,14 @@ class PandasDataCleaner:
     def detectLanguage(self, df, inputRow, outputRow):
         if(not outputRow in df):
             df[outputRow] = ""
+        length = str(df.shape[0])
         for i in range(df.shape[0]):
+            sys.stdout.write("\rDetecting language: " + str(i) + "/" + length)
+            sys.stdout.flush()
             try:
                 df[outputRow][i] = detect(df[inputRow][i])
             except:
-                print("Exception")
-                df[outputRow][i] = ''
+                df[outputRow][i] = 'en'
         return df
 
     def cleanTweets(self, df, inputRow):
