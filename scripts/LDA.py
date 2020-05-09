@@ -35,19 +35,20 @@ class LDA:
             if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3:
                 result.append(self.lemmatise_stemming(token))
         return result
-    
-    def dict_from_vocab(self, doc):
+
+    def dict_from_vocab_orig(self, doc):
         dictionary = gensim.corpora.Dictionary(doc)
+#         dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=100000)
         self.dictionary = dictionary
-      
+
     def tf_idf(self, bow_corpus):
         tfidf = models.TfidfModel(bow_corpus)
         corpus_tfidf = tfidf[bow_corpus]
 
         return corpus_tfidf
-   
-    def train(self, bow_corpus, no_topics, dictionary, passes=2, workers=2):
-        return gensim.models.LdaMulticore(bow_corpus, num_topics=no_topics, id2word=dictionary, passes=passes, workers=workers)
+
+    def train(self, bow_corpus, no_topics, passes=2, workers=2):
+        return gensim.models.LdaMulticore(bow_corpus, num_topics=no_topics, id2word=self.dictionary, passes=passes, workers=workers)
 
     #generate panic prediction from column (tweets)
 
@@ -65,7 +66,6 @@ class LDA:
     def generateBagOfWords(self, docs):
         bow_corpus = [self.dictionary.doc2bow(doc) for doc in docs]
         return bow_corpus
-
 
     def modelFromBow(self, bow, plot=True):
         #normalise each axis for pca
