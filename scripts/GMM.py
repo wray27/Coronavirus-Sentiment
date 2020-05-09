@@ -32,7 +32,7 @@ class GMM:
 
 
 
-    def modelFromBow(self, bow, plot=True, pca_com=3):
+    def modelFromBow(self, bow, plot=True, pca_com=2):
         #normalise each axis for pca
         x = StandardScaler().fit_transform(bow)
 
@@ -45,7 +45,7 @@ class GMM:
 
         if(plot):
             #plot predictions
-            plt.scatter(pc[:, 0], pc[:, 1], c=labels, s=40, cmap='viridis')
+            plt.scatter(x[:, 0], x[:, 1], c=labels, s=40, cmap='viridis')
             plt.show()
 
         return panic
