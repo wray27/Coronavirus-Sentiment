@@ -32,11 +32,11 @@ class GMM:
 
 
 
-    def modelFromBow(self, bow, plot=True):
+    def modelFromBow(self, bow, plot=True, pca_com=2):
         #normalise each axis for pca
         x = StandardScaler().fit_transform(bow)
 
-        pc = pca(x)
+        x = pca(x, no_components=pca_com)
 
         gmm = GaussianMixture(n_components=2).fit(x)
         labels = gmm.predict(x)
@@ -45,7 +45,7 @@ class GMM:
 
         if(plot):
             #plot predictions
-            plt.scatter(pc[:, 0], pc[:, 1], c=labels, s=40, cmap='viridis')
+            plt.scatter(x[:, 0], x[:, 1], c=labels, s=40, cmap='viridis')
             plt.show()
 
         return panic
@@ -65,8 +65,8 @@ def bagOfWords(df, col, vocab=None):
     return bow
 
 
-def pca(x):
-    pca = PCA(n_components=3)
+def pca(x, no_components=3):
+    pca = PCA(n_components=no_components)
     pc = pca.fit_transform(x)
     return pc
 
