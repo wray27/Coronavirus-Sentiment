@@ -256,6 +256,47 @@ def store_as_pickle(name, obj):
     gmm_frame = pd.DataFrame({str(name): pkl}, index=[0])
     gmm_frame.to_pickle(f"./{name}.pkl")
 
+def t_SNE(lda_model, corpus, type_model, topics, date, passes):
+    # Get topic weights and dominant topics ------------
+    from sklearn.manifold import TSNE
+    from bokeh.plotting import figure, output_file, show
+    from bokeh.models import Label
+    from bokeh.io import output_notebook
+
+    # Get topic weights
+    topic_weights = []
+    for i, row_list in enumerate(lda_model[corpus]):
+        topic_weights.append([w for i, w in [row_list[0]]])
+
+    # Array of topic weights    
+    arr = pd.DataFrame(topic_weights).fillna(0).values
+
+    # Keep the well separated points (optional)
+    arr = arr[np.amax(arr, axis=1) > 0.35]
+
+    # Dominant topic number in each doc
+    topic_num = np.argmax(arr, axis=1)
+
+    # tSNE Dimension Reduction
+    tsne_model = TSNE(n_components=1, verbose=1, angle=.99, init='pca')
+    # ValueError: n_components=2 must be between 1 and min(n_samples, n_features)=1 with svd_solver='randomized'
+
+    tsne_lda = tsne_model.fit_transform(arr)
+
+    # Plot the Topic Clusters using Bokeh
+    # output_notebook()
+    n_topics = len(topics)
+    mycolors = np.array([color for name, color in mcolors.TABLEAU_COLORS.items()])
+    # plot = plt.figure(title="t-SNE Clustering of {} LDA Topics".format(n_topics), 
+    #             plot_width=900, plot_height=700)
+    plt.scatter(x=tsne_lda[:,0], y=tsne_lda[:,1], color=mycolors[topic_num])
+    
+    if type_model == "orig":
+        plt.savefig(f"../Results/{passes}-passes/orig/t-SNE/{len(topics)}-topics-{date}/png")
+        plt.clf()
+    elif type_model == "bow":
+        plt.savefig(f"../Results/{passes}-passes/bow/t-SNE/{len(topics)}-topics-{date}/png")
+        plt.clf()
 
 def process_docs(df, lda):
     processed_docs = []
@@ -273,17 +314,17 @@ def process_docs(df, lda):
     # lemmatise and tokenise
     return tempdf['tweet'].map(str).map(lda.preprocess)
 
-def train_lda(no_topics, corpus_tfidf, lda, passes=1):
+def train_lda(no_topics, corpus_tfidf, lda, alpha, passes=1):
 
     print(f"{no_topics} topics:\n")
-    lda_model_tfidf = lda.train(corpus_tfidf, no_topics, passes=passes, workers=4)
+    lda_model_tfidf = lda.train(corpus_tfidf, no_topics, passes=passes, alpha=alpha, workers=4)
     
     for idx, topic in lda_model_tfidf.print_topics(-1):
         print('Topic: {} Word: {}'.format(idx, topic))
         print("\n")
     return lda_model_tfidf
 
-def plot(model, docs, type_model, date, passes):
+def plot(model, docs, type_model, date, passes, alpha, height=1):
     topics = model.show_topics(formatted=False)
     data_flat = [w for w_list in docs for w in w_list]
     counter = Counter(data_flat)
@@ -303,21 +344,20 @@ def plot(model, docs, type_model, date, passes):
         ax_twin = ax.twinx()
         ax_twin.bar(x='word', height="importance", data=df.loc[df.topic_id==i, :], color=cols[i], width=0.2, label='Weights')
         ax.set_ylabel('Word Count', color=cols[i])
-        ax_twin.set_ylim(0, 1); ax.set_ylim(0, 3500)
+        ax_twin.set_ylim(0, height); ax.set_ylim(0, 3500)
         ax.set_title('Topic: ' + str(i), color=cols[i], fontsize=16)
         ax.tick_params(axis='y', left=False)
         ax.set_xticklabels(df.loc[df.topic_id==i, 'word'], rotation=30, horizontalalignment= 'right')
         ax.legend(loc='upper left'); ax_twin.legend(loc='upper right')
 
-    fig.tight_layout(w_pad=2)    
+    fig.tight_layout(w_pad=2)
     fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22, y=1.05)    
     if type_model == "bow":
-        plt.savefig(f"../Results/{passes}-passes/bow/{len(topics)}-topics-{date}")
+        plt.savefig(f"../Results/{passes}-passes/bow/{alpha[0]}/{len(topics)}-topics-{date}")
+        plt.clf()
     elif type_model == "orig":
-        plt.savefig(f"../Results/{passes}-passes/orig/{len(topics)}-topics-{date}")
-
-
-#----------------------------------------------------- FUNCTIONS -------------------------------------------------------#
+        plt.savefig(f"../Results/{passes}-passes/orig/{alpha[0]}/{len(topics)}-topics-{date}")
+        plt.clf()
 
 def get_before_tweets(attributes, tdm):
     before_df = pd.DataFrame()
@@ -352,6 +392,19 @@ def get_after_tweets(attributes, tdm):
             print(path)
             pass
     return after_df
+
+
+
+def ldavis(lda_model, corpus):
+    import pyLDAvis.gensim
+    pyLDAvis.enable_notebook()
+    vis = pyLDAvis.gensim.prepare(lda_model, corpus, dictionary=lda_model.dictionary)
+    store_as_pickle(vis)
+#----------------------------------------------------- FUNCTIONS -------------------------------------------------------#
+
+
+
+
 
 def start(args):
 
@@ -466,17 +519,25 @@ def start(args):
         corpus_tfidf_after_bow = get_pickle_object(name="corpus_tfidf_after_bow")
         print("TFIDF' loaded\n\n")
 
-        for passes in range (2,6):
-            print(f"passes={passes}\n")
+        alpha_value = 0.025
+        for i in range(1,4):
+            passes = 10
+            alpha_value *=2
+            print(f"passes={passes}, alpha: {alpha_value}\n")
             print("--------------Original--------------")
-            for no_topics in range (2, 5):
+            for no_topics in range (3, 5):
+                alpha = [alpha_value] * no_topics
                 print("Before")
-                before_orig = train_lda(no_topics, corpus_tfidf_before_orig, lda_before_orig, passes=passes)
-                plot(model=before_orig, docs=before_docs, type_model="orig", date="before", passes=passes)
+                before_orig = train_lda(no_topics, corpus_tfidf_before_orig, lda_before_orig, passes=passes, alpha=alpha)
+                topics = before_orig.show_topics(formatted=False)
+                plot(model=before_orig, docs=before_docs, type_model="orig", date="before", passes=passes, height=0.02, alpha=alpha)
+                # t_SNE(lda_model=before_orig, corpus=corpus_tfidf_before_orig, type_model="orig", topics=topics, date="before", passes=passes)
                 print("------------  ------------")
                 print("After")
-                after_orig = train_lda(no_topics, corpus_tfidf_after_orig, lda_after_orig, passes=passes)
-                plot(model=after_orig, docs=after_docs, type_model="orig", date="after", passes=passes)
+                after_orig = train_lda(no_topics, corpus_tfidf_after_orig, lda_after_orig, passes=passes, alpha=alpha)
+                topics = after_orig.show_topics(formatted=False)
+                plot(model=after_orig, docs=after_docs, type_model="orig", date="after", passes=passes, height=0.02, alpha=alpha)
+                # t_SNE(lda_model=after_orig, corpus=corpus_tfidf_after_orig, type_model="orig", topics=topics, date="after", passes=passes)
                 print("\n\n")
 
             store_as_pickle(name=f"after-orig_passes={passes}", obj=after_orig)
@@ -484,61 +545,23 @@ def start(args):
 
             print("--------------BOW--------------")
             for no_topics in range (2, 5):
+                alpha = [alpha_value] * no_topics
                 print("Before")
-                before_bow = train_lda(no_topics, corpus_tfidf_before_bow, lda_before_bow, passes=passes)
-                plot(model=before_bow, docs=before_docs, type_model="bow",  date="before", passes=passes)
+                before_bow = train_lda(no_topics, corpus_tfidf_before_bow, lda_before_bow, passes=passes, alpha=alpha)
+                topics = before_bow.show_topics(formatted=False)
+                plot(model=before_bow, docs=before_docs, type_model="bow",  date="before", passes=passes, alpha=alpha)
+                # t_SNE(lda_model=before_bow, corpus=corpus_tfidf_before_bow, type_model="bow", topics=topics, date="before", passes=passes)
                 print("------------  ------------")
                 print("After")
-                after_bow = train_lda(no_topics, corpus_tfidf_after_bow, lda_after_bow, passes=passes)
-                plot(model=after_bow, docs=after_docs, type_model="bow", date="after", passes=passes)
+                after_bow = train_lda(no_topics, corpus_tfidf_after_bow, lda_after_bow, passes=passes, alpha=alpha)
+                topics = after_bow.show_topics(formatted=False)
+                plot(model=after_bow, docs=after_docs, type_model="bow", date="after", passes=passes, alpha=alpha)
+                # t_SNE(lda_model=after_bow, corpus=corpus_tfidf_after_bow, type_model="bow", topics=topics, date="after", passes=passes)
+
                 print("\n\n")
 
-            store_as_pickle(name=f"after-bow_passes={passes}", obj=after_bow)
-            store_as_pickle(name=f"before-bow_passes={passes}", obj=before_bow)
-
-    elif args.start == "Hot":
-
-        # get before and after docs
-        before_docs = get_pickle_object(name="before_docs")
-        after_docs = get_pickle_object(name="after_docs")
-        print("Docs loaded")
-
-        # get before and after trained lda models
-        before_orig = get_pickle_object(name="before-orig")
-        print("--------------Original--------------")
-        print("Before")
-        for idx, topic in before_orig.print_topics(-1):
-            print('Topic: {} Word: {}'.format(idx, topic))
-            print("\n")
-        plot(model=before_orig, docs=before_docs, type_model="orig",  date="before")
-
-        after_orig = get_pickle_object(name="after-orig")
-        print("After")
-        for idx, topic in after_orig.print_topics(-1):
-            print('Topic: {} Word: {}'.format(idx, topic))
-            print("\n")
-        
-        plot(model=after_orig, docs=after_docs, type_model="orig",  date="after")
-
-
-
-    
-        before_bow = get_pickle_object(name="before-bow")
-        print("--------------BOW--------------")
-        print("Before")
-        for idx, topic in before_bow.print_topics(-1):
-            print('Topic: {} Word: {}'.format(idx, topic))
-            print("\n")
-        plot(model=before_bow, docs=before_docs, type_model="bow",  date="before")
-        
-
-
-        after_bow = get_pickle_object(name="after-bow")
-        print("After")
-        for idx, topic in after_bow.print_topics(-1):
-            print('Topic: {} Word: {}'.format(idx, topic))
-            print("\n")
-        plot(model=after_bow, docs=after_docs, type_model="bow",  date="after")
+                store_as_pickle(name=f"after-bow_passes={passes}", obj=after_bow)
+                store_as_pickle(name=f"before-bow_passes={passes}", obj=before_bow)
 
 
 if __name__ == '__main__':
