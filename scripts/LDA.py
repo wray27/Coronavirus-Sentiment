@@ -12,7 +12,6 @@ from nltk.stem import WordNetLemmatizer, SnowballStemmer
 from nltk.stem.porter import *
 import numpy as np
 np.random.seed(2018)
-nltk.download('wordnet')
 
 # 1. Tokenisation
 # 2. Words that have fewer than 3 characters are removed.
@@ -20,15 +19,24 @@ nltk.download('wordnet')
 # 4. Lemmatise words
 # 5. Stem words
 
-
 class LDA:
     def __init__(self):
         self.stemmer = SnowballStemmer("english")
         self.dictionary = None
+        try:
+#             nltk.download('wordnet')
+            dler = nltk.downloader.Downloader()
+            dler._update_index()
+            dler.download('wordnet')
+            
+            print("Downloaded")
+        except Exception as e:
+            print("Error")
+            print(e)
 
     def lemmatise_stemming(self, text):
         return self.stemmer.stem(WordNetLemmatizer().lemmatize(text, pos='v'))
-
+    
     def preprocess(self, text):
         result = []
         for token in gensim.utils.simple_preprocess(text):
@@ -36,7 +44,7 @@ class LDA:
                 result.append(self.lemmatise_stemming(token))
         return result
 
-    def dict_from_vocab_orig(self, doc):
+    def dict_from_vocab(self, doc):
         dictionary = gensim.corpora.Dictionary(doc)
 #         dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=100000)
         self.dictionary = dictionary
@@ -47,8 +55,8 @@ class LDA:
 
         return corpus_tfidf
 
-    def train(self, bow_corpus, no_topics, passes=2, workers=2):
-        return gensim.models.LdaMulticore(bow_corpus, num_topics=no_topics, id2word=self.dictionary, passes=passes, workers=workers)
+    def train(self, bow_corpus, no_topics, alpha, passes=2, workers=2):
+        return gensim.models.LdaMulticore(bow_corpus, num_topics=no_topics, id2word=self.dictionary, passes=passes, workers=workers, alpha=alpha)
 
     #generate panic prediction from column (tweets)
 
